@@ -53,6 +53,7 @@ matrix:
         - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_logical_graph.py; fi
         - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_direct_channel.py; fi
         - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_word_count.py; fi
+      cache: false
 
     - os: linux
       env: LINT=1 PYTHONWARNINGS=ignore
