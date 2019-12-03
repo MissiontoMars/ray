@@ -36,6 +36,9 @@ matrix:
 
     - os: linux
       env: BAZEL_PYTHON_VERSION=PY3 PYTHON=3.5 PYTHONWARNINGS=ignore TESTSUITE=streaming
+      before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq valgrind
       # install:
       #   - eval `python $TRAVIS_BUILD_DIR/ci/travis/determine_tests_to_run.py`
       #   - if [ $RAY_CI_SERVE_AFFECTED != "1" ] && [ $RAY_CI_TUNE_AFFECTED != "1" ] && [ $RAY_CI_RLLIB_AFFECTED != "1" ] && [ $RAY_CI_PYTHON_AFFECTED != "1" ]; then exit; fi
@@ -50,7 +53,7 @@ matrix:
         # - cd python
         # - travis_wait 60 pip install -e .
         # - cd ..
-        - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_logical_graph.py; fi
+        - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || valgrind --tool=memcheck python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_logical_graph.py; fi
         - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_direct_channel.py; fi
         - if [ $RAY_CI_PYTHON_AFFECTED == "1" ]; then python -c 'import sys;exit(sys.version_info>=(3,5))' || python -m pytest -v --durations=5 --timeout=300 streaming/python/tests/test_word_count.py; fi
       cache: false
