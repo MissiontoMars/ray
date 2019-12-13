@@ -119,7 +119,7 @@ StreamingStatus DataReader::GetMessageFromChannel(ConsumerChannelInfo &channel_i
                                                   std::shared_ptr<DataBundle> &message) {
   auto &qid = channel_info.channel_id;
   last_read_q_id_ = qid;
-  STREAMING_LOG(DEBUG) << "[Reader] send get request queue seq id => " << qid;
+  STREAMING_LOG(INFO) << "[Reader] send get request queue seq id => " << qid;
   while (RuntimeStatus::Running == runtime_context_->GetRuntimeStatus() &&
          !message->data) {
     auto status = channel_map_[channel_info.channel_id]->ConsumeItemFromChannel(
@@ -135,7 +135,7 @@ StreamingStatus DataReader::GetMessageFromChannel(ConsumerChannelInfo &channel_i
   if (RuntimeStatus::Interrupted == runtime_context_->GetRuntimeStatus()) {
     return StreamingStatus::Interrupted;
   }
-  STREAMING_LOG(DEBUG) << "[Reader] recevied queue seq id => " << message->seq_id
+  STREAMING_LOG(INFO) << "[Reader] recevied queue seq id => " << message->seq_id
                        << ", queue id => " << qid;
 
   message->from = qid;
@@ -274,7 +274,14 @@ void DataReader::NotifyConsumedItem(ConsumerChannelInfo &channel_info, uint64_t 
 }
 
 DataReader::DataReader(std::shared_ptr<RuntimeContext> &runtime_context)
-    : transfer_config_(new Config()), runtime_context_(runtime_context) {}
+    : transfer_config_(new Config()), runtime_context_(runtime_context) {
+  std::thread stop_thread([this] {
+    sleep(5);
+    STREAMING_LOG(INFO) << "STOP DataReader";
+    this->Stop();
+  });
+  stop_thread.detach();
+}
 
 DataReader::~DataReader() { STREAMING_LOG(INFO) << "Streaming reader deconstruct."; }
 

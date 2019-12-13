@@ -44,6 +44,8 @@ JNIEXPORT void JNICALL Java_org_ray_streaming_runtime_transfer_DataReader_getBun
 
   // over timeout, return empty array.
   if (StreamingStatus::Interrupted == status) {
+    STREAMING_LOG(INFO) << "INTERRUPTED!!!!";
+    sleep(10);
     throwQueueInterruptException(env, "consumer interrupted.");
   } else if (StreamingStatus::GetBundleTimeOut == status) {
   } else if (StreamingStatus::InitQueueFailed == status) {

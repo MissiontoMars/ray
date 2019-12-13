@@ -61,6 +61,12 @@ public class WordCountTest implements Serializable {
       }
     }
     Assert.assertEquals(wordCount, ImmutableMap.of("eagle", 3, "hello", 1, "world", 1));
+    LOGGER.info("TEST DONE=================");
+      try {
+        Thread.sleep(8000);
+      } catch (InterruptedException e) {
+        LOGGER.warn("Got an exception while sleeping.", e);
+      }
   }
 
   private static class WordAndCount implements Serializable {
