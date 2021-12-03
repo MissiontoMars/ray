@@ -223,3 +223,39 @@ cc_binary(
         ":ray_api",
     ],
 )
+
+cc_test(
+    name = "namespace_test",
+    srcs = glob([
+        "src/ray/test/namespace_test.cc",
+    ]),
+    args = [
+        "--ray_code_search_path=$(location test_actors.so)",
+        "--ray_head_args '--include-dashboard false'",
+    ],
+    copts = COPTS,
+    data = [
+        "test_actors.so",
+        "ray_cpp_pkg",
+    ],
+    linkstatic = True,
+    tags = ["team:serverless"],
+    deps = [
+        "ray_api",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "test_actors.so",
+    testonly = True,
+    srcs = [
+        "src/ray/test/namespace_test.cc",
+    ],
+    copts = COPTS,
+    linkopts = ["-shared"],
+    linkstatic = True,
+    deps = [
+        "ray_api",
+    ],
+)

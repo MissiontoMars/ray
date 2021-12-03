@@ -57,6 +57,11 @@ ABSL_FLAG(std::string, ray_head_args, "",
 ABSL_FLAG(int64_t, startup_token, -1,
           "The startup token assigned to this worker process by the raylet.");
 
+ABSL_FLAG(std::string, ray_namespace, "",
+          "The namespace of this job. It's used for isolation between jobs. "
+          "Jobs in different namespaces cannot access each other. "
+          "If it's not specified, a randomized value will be used instead.");
+
 namespace ray {
 namespace internal {
 
@@ -74,6 +79,8 @@ void ConfigInternal::Init(RayConfig &config, int argc, char **argv) {
   if (!config.head_args.empty()) {
     head_args = config.head_args;
   }
+  ray_namespace = config.ray_namespace;
+
   if (argc != 0 && argv != nullptr) {
     // Parse config from command line.
     absl::ParseCommandLine(argc, argv);
@@ -114,6 +121,9 @@ void ConfigInternal::Init(RayConfig &config, int argc, char **argv) {
       std::vector<std::string> args =
           absl::StrSplit(FLAGS_ray_head_args.CurrentValue(), ' ', absl::SkipEmpty());
       head_args.insert(head_args.end(), args.begin(), args.end());
+    }
+    if (!FLAGS_ray_namespace.CurrentValue().empty()) {
+      ray_namespace = FLAGS_ray_namespace.CurrentValue();
     }
     startup_token = absl::GetFlag<int64_t>(FLAGS_startup_token);
   }

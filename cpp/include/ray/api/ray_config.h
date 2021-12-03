@@ -46,6 +46,11 @@ class RayConfig {
 
   // Prevents external clients without the password from connecting to Redis if provided.
   boost::optional<std::string> redis_password_;
+
+  // The namespace of this job. It's used for isolation between jobs. 
+  // Jobs in different namespaces cannot access each other. 
+  // If it's not specified, a randomized value will be used instead.
+  std::string ray_namespace;
 };
 
 }  // namespace ray

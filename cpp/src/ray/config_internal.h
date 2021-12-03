@@ -59,6 +59,8 @@ class ConfigInternal {
 
   std::vector<std::string> head_args = {};
 
+  std::string ray_namespace = "";
+
   static ConfigInternal &Instance() {
     static ConfigInternal config;
     return config;
