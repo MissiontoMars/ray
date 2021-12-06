@@ -21,11 +21,15 @@ namespace internal {
 
 struct RayRuntimeHolder {
   static RayRuntimeHolder &Instance() {
-    static RayRuntimeHolder instance;
-    return instance;
+    // static inline RayRuntimeHolder instance;
+    static RayRuntimeHolder *instance = new RayRuntimeHolder();
+    return *instance;
   }
 
-  void Init(std::shared_ptr<RayRuntime> runtime) { runtime_ = runtime; }
+  void Init(std::shared_ptr<RayRuntime> runtime) { 
+    assert(runtime != nullptr);
+    runtime_ = runtime;
+  }
 
   std::shared_ptr<RayRuntime> Runtime() { return runtime_; }
 

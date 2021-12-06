@@ -272,6 +272,13 @@ inline PlacementGroup GetPlacementGroup(const std::string &name) {
 }
 
 inline bool WasCurrentActorRestarted() {
+  if (ray::internal::GetRayRuntime()) {
+    RAYLOG(INFO) << "WasCurrentActorRestarted ok";
+  } else {
+    RAYLOG(INFO) << "WasCurrentActorRestarted failed";
+  }
+  ray::internal::RayRuntimeHolder &holder = RayRuntimeHolder::Instance();
+  RAYLOG(INFO) << "holder instance address: " << reinterpret_cast<void*>(&holder);
   return ray::internal::GetRayRuntime()->WasCurrentActorRestarted();
 }
 
