@@ -277,8 +277,6 @@ inline bool WasCurrentActorRestarted() {
   } else {
     RAYLOG(INFO) << "WasCurrentActorRestarted failed";
   }
-  ray::internal::RayRuntimeHolder &holder = RayRuntimeHolder::Instance();
-  RAYLOG(INFO) << "holder instance address: " << reinterpret_cast<void*>(&holder);
   return ray::internal::GetRayRuntime()->WasCurrentActorRestarted();
 }
 
