@@ -14,24 +14,36 @@
 
 #pragma once
 
+#include <ray/api/logging.h>
 #include <ray/api/ray_runtime.h>
+
+#include <any>
 
 namespace ray {
 namespace internal {
-
+inline std::any my_runtime;
 struct RayRuntimeHolder {
   static RayRuntimeHolder &Instance() {
     // static inline RayRuntimeHolder instance;
-    static RayRuntimeHolder *instance = new RayRuntimeHolder();
-    return *instance;
+    static RayRuntimeHolder instance{};
+    return instance;
   }
 
-  void Init(std::shared_ptr<RayRuntime> runtime) { 
+  void Init(std::shared_ptr<RayRuntime> runtime) {
     assert(runtime != nullptr);
     runtime_ = runtime;
   }
 
-  std::shared_ptr<RayRuntime> Runtime() { return runtime_; }
+  void InitRuntime(std::any any) { my_runtime = any; }
+
+  std::shared_ptr<RayRuntime> Runtime() {
+    RAYLOG(INFO) << "my_runtime=" << my_runtime.has_value();
+    if (my_runtime.has_value()) {
+      runtime_ = std::any_cast<std::shared_ptr<RayRuntime>>(my_runtime);
+      RAYLOG(INFO) << "my_runtime=" << my_runtime.has_value();
+    }
+    return runtime_;
+  }
 
  private:
   RayRuntimeHolder() = default;

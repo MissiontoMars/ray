@@ -64,6 +64,8 @@ std::pair<const RemoteFunctionMap_t &, const RemoteMemberFunctionMap_t &>
 GetRemoteFunctions() {
   return init_func_manager.GetRemoteFunctions();
 }
+
+void MyInit(std::any any) { RayRuntimeHolder::Instance().InitRuntime(any); }
 }  // namespace internal
 
 namespace internal {

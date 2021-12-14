@@ -80,6 +80,9 @@ void FunctionHelper::LoadDll(const boost::filesystem::path &lib_path) {
 std::string FunctionHelper::LoadAllRemoteFunctions(const std::string lib_path,
                                                    const boost::dll::shared_library &lib,
                                                    const EntryFuntion &entry_function) {
+  RAY_LOG(INFO) << "my_runtime=" << my_runtime.has_value();
+  auto my_init_func = boost::dll::import_alias<void(std::any)>(lib, "MyInit");
+  my_init_func(my_runtime);
   static const std::string internal_function_name = "GetRemoteFunctions";
   if (!lib.has(internal_function_name)) {
     RAY_LOG(WARNING) << "Internal function '" << internal_function_name

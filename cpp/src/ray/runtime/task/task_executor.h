@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <ray/api/function_manager.h>
+#include <ray/api/ray_runtime_holder.h>
 #include <ray/api/serializer.h>
 
 #include <boost/dll.hpp>
@@ -43,6 +43,9 @@ BOOST_DLL_ALIAS(internal::GetFunctionManager, GetFunctionManager);
 std::pair<const RemoteFunctionMap_t &, const RemoteMemberFunctionMap_t &>
 GetRemoteFunctions();
 BOOST_DLL_ALIAS(internal::GetRemoteFunctions, GetRemoteFunctions);
+
+void MyInit(std::any any);
+BOOST_DLL_ALIAS(internal::MyInit, MyInit);
 }  // namespace internal
 
 namespace internal {

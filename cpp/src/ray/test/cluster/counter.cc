@@ -22,11 +22,11 @@
 #endif
 
 Counter::Counter(int init, bool with_exception) {
-  // if (with_exception) {
-  //   throw std::invalid_argument("creation error");
-  // }
+  if (with_exception) {
+    throw std::invalid_argument("creation error");
+  }
   count = init;
-  // is_restared = ray::WasCurrentActorRestarted();
+  is_restared = ray::WasCurrentActorRestarted();
 }
 
 Counter *Counter::FactoryCreate() { return new Counter(0); }

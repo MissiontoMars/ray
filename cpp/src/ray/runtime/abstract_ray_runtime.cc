@@ -43,15 +43,16 @@ namespace internal {
 using ray::core::CoreWorkerProcess;
 using ray::core::WorkerType;
 
-std::shared_ptr<AbstractRayRuntime> AbstractRayRuntime::abstract_ray_runtime_ = nullptr;
+std::shared_ptr<RayRuntime> AbstractRayRuntime::abstract_ray_runtime_ = nullptr;
 
-std::shared_ptr<AbstractRayRuntime> AbstractRayRuntime::DoInit() {
-  std::shared_ptr<AbstractRayRuntime> runtime;
+std::shared_ptr<RayRuntime> AbstractRayRuntime::DoInit() {
+  std::shared_ptr<RayRuntime> runtime;
   if (ConfigInternal::Instance().run_mode == RunMode::SINGLE_PROCESS) {
-    runtime = std::shared_ptr<AbstractRayRuntime>(new LocalModeRayRuntime());
+    runtime = std::shared_ptr<RayRuntime>(new LocalModeRayRuntime());
   } else {
     ProcessHelper::GetInstance().RayStart(TaskExecutor::ExecuteTask);
-    runtime = std::shared_ptr<AbstractRayRuntime>(new NativeRayRuntime());
+    runtime = std::shared_ptr<RayRuntime>(new NativeRayRuntime());
+    ray::internal::my_runtime = runtime;
     RAY_LOG(INFO) << "Native ray runtime started.";
     if (ConfigInternal::Instance().worker_type == WorkerType::WORKER) {
       // Load functions from code search path.
@@ -64,7 +65,7 @@ std::shared_ptr<AbstractRayRuntime> AbstractRayRuntime::DoInit() {
   return runtime;
 }
 
-std::shared_ptr<AbstractRayRuntime> AbstractRayRuntime::GetInstance() {
+std::shared_ptr<RayRuntime> AbstractRayRuntime::GetInstance() {
   return abstract_ray_runtime_;
 }
 
