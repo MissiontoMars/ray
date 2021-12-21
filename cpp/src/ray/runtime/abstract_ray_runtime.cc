@@ -54,13 +54,14 @@ std::shared_ptr<RayRuntime> AbstractRayRuntime::DoInit() {
     runtime = std::shared_ptr<RayRuntime>(new NativeRayRuntime());
     ray::internal::my_runtime = runtime;
     RAY_LOG(INFO) << "Native ray runtime started.";
-    if (ConfigInternal::Instance().worker_type == WorkerType::WORKER) {
-      // Load functions from code search path.
-      FunctionHelper::GetInstance().LoadFunctionsFromPaths(
-          ConfigInternal::Instance().code_search_path);
-    }
   }
   RAY_CHECK(runtime);
+  internal::RayRuntimeHolder::Instance().Init(runtime);
+  if (ConfigInternal::Instance().worker_type == WorkerType::WORKER) {
+    // Load functions from code search path.
+    FunctionHelper::GetInstance().LoadFunctionsFromPaths(
+        ConfigInternal::Instance().code_search_path);
+  }
   abstract_ray_runtime_ = runtime;
   return runtime;
 }

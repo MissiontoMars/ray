@@ -26,12 +26,6 @@ void Init(ray::RayConfig &config, int argc, char **argv) {
     RAYLOG(INFO) << "api.cc not Initialized";
     internal::ConfigInternal::Instance().Init(config, argc, argv);
     auto runtime = internal::AbstractRayRuntime::DoInit();
-    internal::RayRuntimeHolder::Instance().Init(runtime);
-    if (internal::GetRayRuntime()) {
-      RAYLOG(INFO) << "api.cc GetRayRuntime ok";
-    } else {
-      RAYLOG(INFO) << "api.cc GetRayRuntime failed";
-    }
     is_init_ = true;
   } else {
     RAYLOG(INFO) << "api.cc Initialized";
