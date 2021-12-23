@@ -145,7 +145,6 @@ void ProcessHelper::RayStart(CoreWorkerOptions::TaskExecutionCallback callback) 
   for (const auto &path : ConfigInternal::Instance().code_search_path) {
     job_config.add_code_search_path(path);
   }
-  job_config.set_ray_namespace(ConfigInternal::Instance().ray_namespace);
   std::string serialized_job_config;
   RAY_CHECK(job_config.SerializeToString(&serialized_job_config));
   options.serialized_job_config = serialized_job_config;

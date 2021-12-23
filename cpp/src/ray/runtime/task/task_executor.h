@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <ray/api/ray_runtime_holder.h>
+#include <ray/api/function_manager.h>
 #include <ray/api/serializer.h>
 
 #include <boost/dll.hpp>

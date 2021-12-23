@@ -60,9 +60,9 @@ class BackupServer {
 
 BackupServer::BackupServer() {
   // Handle failover when the actor restarts.
-  // if (ray::WasCurrentActorRestarted()) {
-  //   HandleFailover();
-  // }
+  if (ray::WasCurrentActorRestarted()) {
+    HandleFailover();
+  }
   RAYLOG(INFO) << "BackupServer created";
 }
 
@@ -96,9 +96,9 @@ class MainServer {
 };
 
 MainServer::MainServer() {
-  // if (ray::WasCurrentActorRestarted()) {
-  //   HandleFailover();
-  // }
+  if (ray::WasCurrentActorRestarted()) {
+    HandleFailover();
+  }
 
   backup_actor_ = *ray::GetActor<BackupServer>(BACKUP_SERVER_NAME);
   RAYLOG(INFO) << "MainServer created";

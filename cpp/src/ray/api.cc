@@ -23,12 +23,9 @@ static bool is_init_ = false;
 
 void Init(ray::RayConfig &config, int argc, char **argv) {
   if (!IsInitialized()) {
-    RAYLOG(INFO) << "api.cc not Initialized";
     internal::ConfigInternal::Instance().Init(config, argc, argv);
     auto runtime = internal::AbstractRayRuntime::DoInit();
     is_init_ = true;
-  } else {
-    RAYLOG(INFO) << "api.cc Initialized";
   }
 }
 
@@ -43,7 +40,6 @@ bool IsInitialized() { return is_init_; }
 
 void Shutdown() {
   // TODO(SongGuyang): Clean the ray runtime.
-  RAYLOG(INFO) << "Shutdown!!!!";
   internal::AbstractRayRuntime::DoShutdown();
   is_init_ = false;
 }

@@ -91,8 +91,8 @@ class AbstractRayRuntime : public RayRuntime {
 
   const std::unique_ptr<WorkerContext> &GetWorkerContext();
 
-  static std::shared_ptr<RayRuntime> GetInstance();
-  static std::shared_ptr<RayRuntime> DoInit();
+  static std::shared_ptr<AbstractRayRuntime> GetInstance();
+  static std::shared_ptr<AbstractRayRuntime> DoInit();
 
   static void DoShutdown();
 
@@ -114,7 +114,7 @@ class AbstractRayRuntime : public RayRuntime {
   std::unique_ptr<ray::gcs::GlobalStateAccessor> global_state_accessor_;
 
  private:
-  static std::shared_ptr<RayRuntime> abstract_ray_runtime_;
+  static std::shared_ptr<AbstractRayRuntime> abstract_ray_runtime_;
   void Execute(const TaskSpecification &task_spec);
   PlacementGroup GeneratePlacementGroup(const std::string &str);
 };

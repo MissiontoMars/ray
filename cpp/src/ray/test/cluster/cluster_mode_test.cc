@@ -30,12 +30,12 @@ ABSL_FLAG(bool, external_cluster, false, "");
 ABSL_FLAG(std::string, redis_password, "12345678", "");
 ABSL_FLAG(int32_t, redis_port, 6379, "");
 
-// TEST(RayClusterModeTest, Initialized) {
-//   ray::Init();
-//   EXPECT_TRUE(ray::IsInitialized());
-//   ray::Shutdown();
-//   EXPECT_TRUE(!ray::IsInitialized());
-// }
+TEST(RayClusterModeTest, Initialized) {
+  ray::Init();
+  EXPECT_TRUE(ray::IsInitialized());
+  ray::Shutdown();
+  EXPECT_TRUE(!ray::IsInitialized());
+}
 
 TEST(RayClusterModeTest, FullTest) {
   ray::RayConfig config;
@@ -254,17 +254,17 @@ TEST(RayClusterModeTest, ExceptionTest) {
   EXPECT_THROW(object2.Get(), ray::internal::RayActorException);
 }
 
-// TEST(RayClusterModeTest, GetAllNodeInfoTest) {
-//   const auto &gcs_client =
-//       ray::internal::AbstractRayRuntime::GetInstance()->GetGlobalStateAccessor();
-//   auto all_node_info = gcs_client->GetAllNodeInfo();
-//   EXPECT_EQ(all_node_info.size(), 1);
+TEST(RayClusterModeTest, GetAllNodeInfoTest) {
+  const auto &gcs_client =
+      ray::internal::AbstractRayRuntime::GetInstance()->GetGlobalStateAccessor();
+  auto all_node_info = gcs_client->GetAllNodeInfo();
+  EXPECT_EQ(all_node_info.size(), 1);
 
-//   ray::rpc::GcsNodeInfo node_info;
-//   node_info.ParseFromString(all_node_info[0]);
-//   EXPECT_EQ(node_info.state(),
-//             ray::rpc::GcsNodeInfo_GcsNodeState::GcsNodeInfo_GcsNodeState_ALIVE);
-// }
+  ray::rpc::GcsNodeInfo node_info;
+  node_info.ParseFromString(all_node_info[0]);
+  EXPECT_EQ(node_info.state(),
+            ray::rpc::GcsNodeInfo_GcsNodeState::GcsNodeInfo_GcsNodeState_ALIVE);
+}
 
 bool CheckRefCount(
     std::unordered_map<ray::ObjectID, std::pair<size_t, size_t>> expected) {
