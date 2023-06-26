@@ -463,6 +463,8 @@ class MetricsAgent:
             if not self.view_manager:
                 return
 
+        for metric in metrics:
+            logger.info(f"proxy_export_metrics {metric.metric_descriptor.name}")
         self._proxy_export_metrics(metrics, worker_id_hex)
 
     def _proxy_export_metrics(self, metrics: List[Metric], worker_id_hex: str = None):
