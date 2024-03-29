@@ -2138,6 +2138,42 @@ def start_monitor(
     )
     return process_info
 
+def start_history_server(
+    gcs_address: str,
+    logs_dir: str,
+    stdout_file: Optional[str] = None,
+    stderr_file: Optional[str] = None,
+    fate_share: Optional[bool] = None,
+):
+    logger.info('start_history_server')
+    entrypoint = os.path.join(RAY_PATH, 'history_server', "history_server.py")
+
+    command = [
+        sys.executable,
+        "-u",
+        entrypoint,
+        f"--logs-dir={logs_dir}",
+    ]
+    assert gcs_address is not None
+    command.append(f"--gcs-address={gcs_address}")
+
+    if stdout_file is None and stderr_file is None:
+        # If not redirecting logging to files, unset log filename.
+        # This will cause log records to go to stderr.
+        command.append("--logging-filename=")
+        # Use stderr log format with the component name as a message prefix.
+        logging_format = ray_constants.LOGGER_FORMAT_STDERR.format(
+            component=ray_constants.PROCESS_TYPE_MONITOR
+        )
+        command.append(f"--logging-format={logging_format}")
+    process_info = start_ray_process(
+        command,
+        ray_constants.PROCESS_TYPE_MONITOR,
+        stdout_file=stdout_file,
+        stderr_file=stderr_file,
+        fate_share=fate_share,
+    )
+    return process_info
 
 def start_ray_client_server(
     address: str,

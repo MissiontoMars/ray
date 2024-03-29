@@ -169,6 +169,17 @@ class GcsAioPublisher(_PublisherBase):
         req = self._create_node_resource_usage_request(key, json)
         await self._stub.GcsPublish(req)
 
+    async def publish_job_change(
+        self, submission_id: str, message: str, num_retries=None
+    ) -> None:
+        """Publishes error info to GCS."""
+        msg = pubsub_pb2.PubMessage(
+            channel_type=pubsub_pb2.RAY_JOB_SUBMISSION_STATE_CHANGE,
+            key_id=submission_id.encode(),
+            job_change_message=common_pb2.JobChangeMessage(json=message),
+        )
+        req = gcs_service_pb2.GcsPublishRequest(pub_messages=[msg])
+        await self._stub.GcsPublish(req)
 
 class _AioSubscriber(_SubscriberBase):
     """Async io subscriber to GCS.
