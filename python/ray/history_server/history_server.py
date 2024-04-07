@@ -7,7 +7,7 @@ import json
 import asyncio
 import logging
 from ray._private.ray_logging import setup_component_logger
-from ray._private.gcs_pubsub import _AioSubscriber
+from ray._private.gcs_pubsub import _AioSubscriber, GcsAioActorSubscriber
 from ray.core.generated import (
     gcs_service_pb2,
     gcs_service_pb2_grpc,
@@ -22,12 +22,71 @@ import grpc
 from storage import (
     append_job_event,
     append_node_event,
+    append_actor_events,
     create_history_server_storage,
 )
 from ray._private.gcs_utils import GcsAioClient, GcsChannel
 import ray.dashboard.utils as dashboard_utils
+from ray.dashboard.modules.actor import actor_consts
 
 logger = logging.getLogger(__name__)
+
+def actor_table_data_to_dict(message):
+    orig_message = dashboard_utils.message_to_dict(
+        message,
+        {
+            "actorId",
+            "parentId",
+            "jobId",
+            "workerId",
+            "rayletId",
+            "callerId",
+            "taskId",
+            "parentTaskId",
+            "sourceActorId",
+        },
+        always_print_fields_with_no_presence=True,
+    )
+    # The complete schema for actor table is here:
+    #     src/ray/protobuf/gcs.proto
+    # It is super big and for dashboard, we don't need that much information.
+    # Only preserve the necessary ones here for memory usage.
+    fields = {
+        "actorId",
+        "jobId",
+        "pid",
+        "address",
+        "state",
+        "name",
+        "numRestarts",
+        "timestamp",
+        "className",
+        "startTime",
+        "endTime",
+        "reprName",
+    }
+    light_message = {k: v for (k, v) in orig_message.items() if k in fields}
+    light_message["actorClass"] = orig_message["className"]
+    exit_detail = "-"
+    if "deathCause" in orig_message:
+        context = orig_message["deathCause"]
+        if "actorDiedErrorContext" in context:
+            exit_detail = context["actorDiedErrorContext"]["errorMessage"]  # noqa
+        elif "runtimeEnvFailedContext" in context:
+            exit_detail = context["runtimeEnvFailedContext"]["errorMessage"]  # noqa
+        elif "actorUnschedulableContext" in context:
+            exit_detail = context["actorUnschedulableContext"]["errorMessage"]  # noqa
+        elif "creationTaskFailureContext" in context:
+            exit_detail = context["creationTaskFailureContext"][
+                "formattedExceptionString"
+            ]  # noqa
+    light_message["exitDetail"] = exit_detail
+    light_message["startTime"] = int(light_message["startTime"])
+    light_message["endTime"] = int(light_message["endTime"])
+    light_message["requiredResources"] = dict(message.required_resources)
+
+    return light_message
+
 
 
 def gcs_node_info_to_dict(message):
@@ -222,8 +281,61 @@ class HistoryServer:
             finally:
                 await asyncio.sleep(5)
 
+    async def _listen_actors(self):
+        state_keys = (
+            "state",
+            "address",
+            "numRestarts",
+            "timestamp",
+            "pid",
+            "exitDetail",
+            "startTime",
+            "endTime",
+            "reprName",
+        )
+
+        def process_actor_data_from_pubsub(actor_id, actor_table_data):
+            actor_table_data = actor_table_data_to_dict(actor_table_data)
+            # If actor is not new registered but updated, we only update
+            # states related fields.
+            if actor_table_data["state"] != "DEPENDENCIES_UNREADY":
+                actors = DataSource.actors[actor_id]
+                for k in state_keys:
+                    if k in actor_table_data:
+                        actors[k] = actor_table_data[k]
+                actor_table_data = actors
+            actor_id = actor_table_data["actorId"]
+            node_id = actor_table_data["address"]["rayletId"]
+            # Update actors.
+            DataSource.actors[actor_id] = actor_table_data
+            # Update node actors (only when node_id is not Nil).
+            if node_id != actor_consts.NIL_NODE_ID:
+                node_actors = DataSource.node_actors.get(node_id, {})
+                node_actors[actor_id] = actor_table_data
+                DataSource.node_actors[node_id] = node_actors
+            return actor_table_data
+
+        # Receive actors from channel.
+        subscriber = GcsAioActorSubscriber(address=self.gcs_address)
+        await subscriber.subscribe()
+
+        while True:
+            try:
+                logger.info('_listen_actors from pubsub')
+                published = await subscriber.poll(batch_size=200)
+                actor_table_data_batch = []
+                for actor_id, actor_table_data in published:
+                    if actor_id is not None:
+                        # Convert to lower case hex ID.
+                        actor_id = actor_id.hex()
+                        actor_table_data = process_actor_data_from_pubsub(actor_id, actor_table_data)
+                        actor_table_data_batch.append(actor_table_data)
+                append_actor_events(self.storage, actor_table_data_batch)
+            except Exception:
+                logger.exception("Error processing actor info from GCS.")
+
     async def _run(self):
-        await asyncio.gather(self._listen_jobs(), self._listen_nodes())
+        await asyncio.gather(self._listen_jobs(), self._listen_nodes(), self._listen_actors())
 
     def run(self):
         loop = ray._private.utils.get_or_create_event_loop()
