@@ -8,17 +8,32 @@ import asyncio
 import logging
 from ray._private.ray_logging import setup_component_logger
 from ray._private.gcs_pubsub import _AioSubscriber
-from ray.core.generated import pubsub_pb2
+from ray.core.generated import (
+    gcs_service_pb2,
+    gcs_service_pb2_grpc,
+    node_manager_pb2,
+    node_manager_pb2_grpc,
+    pubsub_pb2,
+)
 from typing import Tuple, List
 import ray._private.ray_constants as ray_constants
+from ray.dashboard.datacenter import DataOrganizer, DataSource
 import grpc
 from storage import (
     append_job_event,
+    append_node_event,
     create_history_server_storage,
 )
+from ray._private.gcs_utils import GcsAioClient, GcsChannel
+import ray.dashboard.utils as dashboard_utils
 
 logger = logging.getLogger(__name__)
 
+
+def gcs_node_info_to_dict(message):
+    return dashboard_utils.message_to_dict(
+        message, {"nodeId"}, always_print_fields_with_no_presence=True
+    )
 
 class GcsAioJobSubmissionSubscriber(_AioSubscriber):
     def __init__(
@@ -133,6 +148,7 @@ class HistoryServer:
     ):
         self.gcs_address = address
         self.storage = create_history_server_storage()
+        self._gcs_node_info_stub = None
 
     
     async def _listen_jobs(self):
@@ -156,15 +172,58 @@ class HistoryServer:
                 logger.info(
                     f"_listen_jobs type: {type(job_change_message)} job_change_message: {job_change_message}"
                 )
-                append_job_event(
-                    self.storage,
-                    submission_id,
-                    job_change_message,
-                )
+                append_job_event(self.storage, submission_id, job_change_message)
             await asyncio.sleep(5)
 
+    async def _get_nodes(self):
+        """Read the client table.
+
+        Returns:
+            A dict of information about the nodes in the cluster.
+        """
+        request = gcs_service_pb2.GetAllNodeInfoRequest()
+        reply = await self._gcs_node_info_stub.GetAllNodeInfo(request, timeout=2)
+        if reply.status.code == 0:
+            result = {}
+            for node_info in reply.node_info_list:
+                node_info_dict = gcs_node_info_to_dict(node_info)
+                result[node_info_dict["nodeId"]] = node_info_dict
+            return result
+        else:
+            logger.error("Failed to GetAllNodeInfo: %s", reply.status.message)
+
+    async def _listen_nodes(self):
+        gcs_channel = GcsChannel(gcs_address=self.gcs_address, aio=True)
+        gcs_channel.connect()
+        aiogrpc_gcs_channel = gcs_channel.channel()
+        self._gcs_node_info_stub = gcs_service_pb2_grpc.NodeInfoGcsServiceStub(
+            aiogrpc_gcs_channel
+        )
+        # TODO(fyrestone): Refactor code for updating actor / node / job.
+        # Subscribe actor channel.
+        while True:
+            try:
+                logger.info("_listen_nodes from pubsub")
+                nodes = await self._get_nodes()
+
+                # update history server storage iff node state has changed
+                logger.info(f"_listen_nodes DataSource.nodes: {DataSource.nodes}")
+                logger.info(f"_listen_nodes nodes: {nodes}")
+                for node_id, node in nodes.items():
+                    if (
+                        node_id not in DataSource.nodes
+                        or node["state"] != DataSource.nodes[node_id]["state"]
+                    ):
+                        logger.info("_listen_nodes append")
+                        append_node_event(self.storage, node_id, node)
+                DataSource.nodes.reset(nodes)
+            except Exception:
+                logger.exception("Error listen nodes.")
+            finally:
+                await asyncio.sleep(5)
+
     async def _run(self):
-        await asyncio.gather(self._listen_jobs())
+        await asyncio.gather(self._listen_jobs(), self._listen_nodes())
 
     def run(self):
         loop = ray._private.utils.get_or_create_event_loop()
@@ -218,7 +277,7 @@ if __name__ == "__main__":
         backup_count=1000000,
     )
 
-    logger.info(f"Starting monitor using ray installation: {ray.__file__}")
+    logger.info(f"Starting history server monitor using ray installation: {ray.__file__}")
     logger.info(f"Ray version: {ray.__version__}")
     logger.info(f"Ray commit: {ray.__commit__}")
     logger.info(f"Monitor started with command: {sys.argv}")

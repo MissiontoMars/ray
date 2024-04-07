@@ -1073,6 +1073,7 @@ def stop(force: bool, grace_period: int):
                 pass
 
         stopped = []
+        cli_logger.info(f'processes_to_kill {processes_to_kill}')
         for keyword, filter_by_cmd in processes_to_kill:
             if filter_by_cmd and is_linux and len(keyword) > 15:
                 # getting here is an internal bug, so we do not use cli_logger
@@ -1102,11 +1103,12 @@ def stop(force: bool, grace_period: int):
                         proc.terminate()
 
                     if force:
-                        cli_logger.verbose(
+                        cli_logger.info(
                             "Killed `{}` {} ",
                             cf.bold(proc_string),
                             cf.dimmed("(via SIGKILL)"),
                         )
+                        cli_logger.info(proc_string)
                     else:
                         cli_logger.verbose(
                             "Send termination request to `{}` {}",

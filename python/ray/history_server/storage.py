@@ -45,6 +45,7 @@ class LocalFileStorage(Storage):
 
         with self.lock:
             try:
+                print("LocalFileStorage append")
                 if not self.file_path:
                     self.file_path = (
                         f"{self.base_path}/{self.dir}/{DEFAULT_EVENT_LOG_FILENAME}"
@@ -408,6 +409,7 @@ def append_actor_events(storage: Storage, actor_infos: List[Any]):
 
 
 def append_node_event(storage: Storage, node_id: str, node_info: str):
+    print(f"append_node_event node_id: {node_id}")
     json_obj = {
         "event_type": "NODE",
         "node": {"node_id": node_id, "node_info": node_info},

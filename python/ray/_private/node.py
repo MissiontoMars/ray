@@ -1781,10 +1781,12 @@ class Node:
 
     def start_history_server(self):
         stdout_file, stderr_file = self.get_log_file_handles("history_server", unique=True)
-        ray._private.services.start_history_server(
+        process_info = ray._private.services.start_history_server(
             self.gcs_address,
             self._logs_dir,
             stdout_file=stdout_file,
             stderr_file=stderr_file,
             fate_share=self.kernel_fate_share,
         )
+        assert ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR not in self.all_processes
+        self.all_processes[ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR] = [process_info]

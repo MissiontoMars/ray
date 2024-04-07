@@ -239,6 +239,7 @@ PROCESS_TYPE_WEB_UI = "web_ui"
 PROCESS_TYPE_GCS_SERVER = "gcs_server"
 PROCESS_TYPE_PYTHON_CORE_WORKER_DRIVER = "python-core-driver"
 PROCESS_TYPE_PYTHON_CORE_WORKER = "python-core-worker"
+PROCESS_TYPE_HISTORY_SERVER_MONITOR = "history_server_monitor"
 
 # Log file names
 MONITOR_LOG_FILE_NAME = f"{PROCESS_TYPE_MONITOR}.log"

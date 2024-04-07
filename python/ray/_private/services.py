@@ -2163,12 +2163,12 @@ def start_history_server(
         command.append("--logging-filename=")
         # Use stderr log format with the component name as a message prefix.
         logging_format = ray_constants.LOGGER_FORMAT_STDERR.format(
-            component=ray_constants.PROCESS_TYPE_MONITOR
+            component=ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR
         )
         command.append(f"--logging-format={logging_format}")
     process_info = start_ray_process(
         command,
-        ray_constants.PROCESS_TYPE_MONITOR,
+        ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR,
         stdout_file=stdout_file,
         stderr_file=stderr_file,
         fate_share=fate_share,
