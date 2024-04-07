@@ -213,7 +213,7 @@ class JobInfoStorageClient:
             namespace=ray_constants.KV_NAMESPACE_JOB,
         )
         if ray_constants.RAY_HISTORY_SERVER_ENABLED and gcs_publisher:
-            print(f'publish_job_change')
+            print(f'publish_job_change {job_info.to_json()}')
             await gcs_publisher.publish_job_change(
                 job_id, json.dumps(job_info.to_json())
             )
