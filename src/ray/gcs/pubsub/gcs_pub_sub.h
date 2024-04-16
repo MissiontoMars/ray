@@ -87,6 +87,10 @@ class GcsPublisher {
   Status PublishResourceBatch(const rpc::ResourceUsageBatchData &message,
                               const StatusCallback &done);
 
+  Status PublishTaskStatusEvent(const TaskID &id,
+                                const rpc::TaskEvents &message,
+                                const StatusCallback &done);
+
   /// Prints debugging info for the publisher.
   std::string DebugString() const;
 

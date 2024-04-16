@@ -35,6 +35,20 @@ Status GcsPublisher::PublishActor(const ActorID &id,
   return Status::OK();
 }
 
+Status GcsPublisher::PublishTaskStatusEvent(const TaskID &id,
+                                            const rpc::TaskEvents &message,
+                                            const StatusCallback &done) {
+  rpc::PubMessage msg;
+  msg.set_channel_type(rpc::ChannelType::GCS_TASK_STATUS_EVENT_CHANNEL);
+  msg.set_key_id(id.Binary());
+  *msg.mutable_task_events_message() = message;
+  publisher_->Publish(std::move(msg));
+  if (done != nullptr) {
+    done(Status::OK());
+  }
+  return Status::OK();
+}
+
 Status GcsPublisher::PublishJob(const JobID &id,
                                 const rpc::JobTableData &message,
                                 const StatusCallback &done) {

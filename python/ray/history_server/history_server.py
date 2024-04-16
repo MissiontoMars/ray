@@ -7,7 +7,7 @@ import json
 import asyncio
 import logging
 from ray._private.ray_logging import setup_component_logger
-from ray._private.gcs_pubsub import _AioSubscriber, GcsAioActorSubscriber
+from ray._private.gcs_pubsub import _AioSubscriber, GcsAioActorSubscriber, GcsAioTaskEventsSubscriber
 from ray.core.generated import (
     gcs_service_pb2,
     gcs_service_pb2_grpc,
@@ -334,8 +334,31 @@ class HistoryServer:
             except Exception:
                 logger.exception("Error processing actor info from GCS.")
 
+    async def _listen_tasks(self):
+        # Receive actors from channel.
+        subscriber = GcsAioTaskEventsSubscriber(address=self.gcs_address)
+        await subscriber.subscribe()
+
+        while True:
+            try:
+                logger.info('_listen_tasks from pubsub')
+                published = await subscriber.poll(batch_size=200)
+                actor_table_data_batch = []
+                for task_id, task_events in published:
+                    if task_id is not None:
+                        # Convert to lower case hex ID.
+                        task_id = task_id.hex()
+                        logger.info(f'_listen_tasks task_id: {task_id} type: {type(task_events)} task_events: {task_events}')
+
+                        orig_message = dashboard_utils.message_to_dict(task_events)
+                        logger.info(f'_listen_tasks orig_message: {orig_message}')
+                #append_actor_events(self.storage, actor_table_data_batch)
+            except Exception:
+                logger.exception("Error processing task info from GCS.")
+
+
     async def _run(self):
-        await asyncio.gather(self._listen_jobs(), self._listen_nodes(), self._listen_actors())
+        await asyncio.gather(self._listen_jobs(), self._listen_nodes(), self._listen_actors(), self._listen_tasks())
 
     def run(self):
         loop = ray._private.utils.get_or_create_event_loop()

@@ -137,6 +137,17 @@ class _SubscriberBase:
             popped += 1
         return msgs
 
+    @staticmethod
+    def _pop_task_events(queue, batch_size=100):
+        if len(queue) == 0:
+            return []
+        popped = 0
+        msgs = []
+        while len(queue) > 0 and popped < batch_size:
+            msg = queue.popleft()
+            msgs.append((msg.key_id, msg.task_events_message))
+            popped += 1
+        return msgs
 
 class GcsAioPublisher(_PublisherBase):
     """Publisher to GCS. Uses async io."""
@@ -368,3 +379,25 @@ class GcsAioActorSubscriber(_AioSubscriber):
         """
         await self._poll(timeout=timeout)
         return self._pop_actors(self._queue, batch_size=batch_size)
+
+class GcsAioTaskEventsSubscriber(_AioSubscriber):
+    def __init__(
+        self,
+        worker_id: bytes = None,
+        address: str = None,
+        channel: grpc.Channel = None,
+    ):
+        super().__init__(pubsub_pb2.GCS_TASK_STATUS_EVENT_CHANNEL, worker_id, address, channel)
+
+    @property
+    def queue_size(self):
+        return len(self._queue)
+
+    async def poll(self, timeout=None, batch_size=500) -> List[Tuple[bytes, str]]:
+        """Polls for new actor message.
+
+        Returns:
+            A tuple of binary actor ID and actor table data.
+        """
+        await self._poll(timeout=timeout)
+        return self._pop_task_events(self._queue, batch_size=batch_size)

@@ -23,6 +23,7 @@
 #include "ray/rpc/gcs_server/gcs_rpc_server.h"
 #include "ray/util/counter_map.h"
 #include "src/ray/protobuf/gcs.pb.h"
+#include "ray/gcs/pubsub/gcs_pub_sub.h"
 
 namespace ray {
 namespace gcs {
@@ -85,7 +86,7 @@ class FinishedTaskActorTaskGcPolicy : public TaskEventsGcPolicyInterface {
 class GcsTaskManager : public rpc::TaskInfoHandler {
  public:
   /// Create a GcsTaskManager.
-  GcsTaskManager()
+  GcsTaskManager(std::shared_ptr<GcsPublisher> gcs_publisher)
       : stats_counter_(),
         task_event_storage_(std::make_unique<GcsTaskManagerStorage>(
             RayConfig::instance().task_events_max_num_task_in_gcs(),
@@ -97,7 +98,7 @@ class GcsTaskManager : public rpc::TaskInfoHandler {
           boost::asio::io_service::work io_service_work_(io_service_);
           io_service_.run();
         })),
-        periodical_runner_(io_service_) {
+        periodical_runner_(io_service_), gcs_publisher_(gcs_publisher) {
     periodical_runner_.RunFnPeriodically([this] { task_event_storage_->GcJobSummary(); },
                                          5 * 1000,
                                          "GcsTaskManager.GcJobSummary");
@@ -533,6 +534,9 @@ class GcsTaskManager : public rpc::TaskInfoHandler {
 
   /// The runner to run function periodically.
   PeriodicalRunner periodical_runner_;
+
+  /// A publisher for publishing gcs messages.
+  std::shared_ptr<GcsPublisher> gcs_publisher_;
 
   FRIEND_TEST(GcsTaskManagerTest, TestHandleAddTaskEventBasic);
   FRIEND_TEST(GcsTaskManagerTest, TestMergeTaskEventsSameTaskAttempt);

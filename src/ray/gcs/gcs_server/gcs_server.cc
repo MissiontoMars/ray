@@ -117,6 +117,7 @@ GcsServer::GcsServer(const ray::gcs::GcsServerConfig &config,
           rpc::ChannelType::RAY_LOG_CHANNEL,
           rpc::ChannelType::RAY_NODE_RESOURCE_USAGE_CHANNEL,
           rpc::ChannelType::RAY_JOB_SUBMISSION_STATE_CHANGE,
+          rpc::ChannelType::GCS_TASK_STATUS_EVENT_CHANNEL,
       },
       /*periodical_runner=*/&pubsub_periodical_runner_,
       /*get_time_ms=*/[]() { return absl::GetCurrentTimeNanos() / 1e6; },
@@ -686,7 +687,7 @@ void GcsServer::InitGcsAutoscalerStateManager(const GcsInitData &gcs_init_data) 
 }
 
 void GcsServer::InitGcsTaskManager() {
-  gcs_task_manager_ = std::make_unique<GcsTaskManager>();
+  gcs_task_manager_ = std::make_unique<GcsTaskManager>(gcs_publisher_);
   // Register service.
   task_info_service_.reset(new rpc::TaskInfoGrpcService(gcs_task_manager_->GetIoContext(),
                                                         *gcs_task_manager_));

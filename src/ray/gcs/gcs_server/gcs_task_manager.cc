@@ -494,6 +494,11 @@ void GcsTaskManager::HandleAddTaskEventData(rpc::AddTaskEventDataRequest request
   for (auto events_by_task : *data.mutable_events_by_task()) {
     stats_counter_.Increment(kTotalNumTaskEventsReported);
     task_event_storage_->AddOrReplaceTaskEvent(std::move(events_by_task));
+    // auto job_id = JobID::FromBinary(events_by_task.job_id());
+    auto task_id = TaskID::FromBinary(events_by_task.task_id());
+    RAY_CHECK_OK(gcs_publisher_->PublishTaskStatusEvent(
+        task_id, events_by_task, nullptr));
+    RAY_LOG(INFO) << "HandleAddTaskEventData published.";
   }
 
   // Processed all the task events
