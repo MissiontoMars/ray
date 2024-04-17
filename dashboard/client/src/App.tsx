@@ -254,7 +254,13 @@ const App = () => {
                   </Route>
                 </Route>
                 <Route element={<ActorLayout />} path="actors">
-                  <Route element={<Actors />} path="history/:clustername/actors" />
+                  <Route element={<Actors />} path="" />
+                  <Route element={<ActorDetailLayout />} path=":actorId">
+                    <Route element={<ActorDetailPage />} path="" />
+                    <Route element={<TaskPage />} path="tasks/:taskId" />
+                  </Route>
+                </Route>
+                <Route element={<ActorLayout />} path="history/:clustername/actors">
                   <Route element={<Actors />} path="" />
                   <Route element={<ActorDetailLayout />} path=":actorId">
                     <Route element={<ActorDetailPage />} path="" />
