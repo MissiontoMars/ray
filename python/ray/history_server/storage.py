@@ -10,7 +10,7 @@ import subprocess
 import ray
 import ray.dashboard.optional_utils as optional_utils
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
-from util import encrypt_aes
+from .util import encrypt_aes
 from typing import List, Any
 
 logger = logging.getLogger(__name__)

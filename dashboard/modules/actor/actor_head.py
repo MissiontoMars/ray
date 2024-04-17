@@ -16,6 +16,9 @@ from ray.core.generated import (
 )
 from ray.dashboard.datacenter import DataSource, DataOrganizer
 from ray.dashboard.modules.actor import actor_consts
+from ray.history_server.storage import (
+    get_event_log,
+)
 
 logger = logging.getLogger(__name__)
 routes = dashboard_optional_utils.DashboardHeadRouteTable
@@ -237,6 +240,50 @@ class ActorHead(dashboard_utils.DashboardHeadModule):
                 self.total_published_events / self.accumulative_event_processing_s
             )
         return states
+
+    def _get_cluster_all_actors(self, cluster_name):
+        import json
+        event_log_str = get_event_log(
+            self._dashboard_head.event_log_cache, cluster_name
+        )
+        logger.info(f"event_log_str: {event_log_str}")
+        if not event_log_str:
+            return []
+
+        def actor_line_filter(l):
+            logger.info(f"actor_line_filter {l}")
+            d = json.loads(l)
+            return d["event_type"] == "ACTOR"
+
+        event_log_lines = event_log_str.rstrip().split("\n")
+        logger.info(f"event_log_lines: {event_log_lines}")
+        event_log_actor_lines = list(filter(actor_line_filter, event_log_lines))
+
+        actors_list = {}
+        for line in event_log_actor_lines:
+            logger.info(f"actor line: {line}")
+            actor_event = json.loads(line)
+            actor_id = actor_event["actor"]["actor_id"]
+            actors_list[actor_id] = actor_event["actor"]["actor_info"]
+
+        logger.info(f"replay actors: {actors_list}")
+        return actors_list
+
+    @routes.get("/logical/actors/history/{cluster_name}")
+    @dashboard_optional_utils.aiohttp_cache
+    async def get_all_history_actors(self, req) -> aiohttp.web.Response:
+        cluster_name = req.match_info["cluster_name"]
+        actors_list = self._get_cluster_all_actors(cluster_name)
+
+        return dashboard_optional_utils.rest_response(
+            success=True,
+            message="All actors fetched.",
+            actors=actors_list,
+            # False to avoid converting Ray resource name to google style.
+            # It's not necessary here because the fields are already
+            # google formatted when protobuf was converted into dict.
+            convert_google_style=False,
+        )
 
     @routes.get("/logical/actors")
     @dashboard_optional_utils.aiohttp_cache
