@@ -1,4 +1,4 @@
-import { ActorDetail } from "../type/actor";
+import { Actor, ActorDetail } from "../type/actor";
 import { get } from "./requestHandlers";
 
 export const getActors = () => {
@@ -23,4 +23,16 @@ export type ActorResp = {
 
 export const getActor = (actorId: string) => {
   return get<ActorResp>(`logical/actors/${actorId}`);
+};
+
+export const getHistoryActors = (clustername: string) => {
+  return get<{
+    result: boolean;
+    message: string;
+    data: {
+      actors: {
+        [actorId: string]: ActorDetail;
+      };
+    };
+  }>(`logical/actors/history/${clustername}`);
 };
