@@ -102,7 +102,7 @@ class GcsAioJobSubmissionSubscriber(_AioSubscriber):
         channel: grpc.Channel = None,
     ):
         super().__init__(
-            pubsub_pb2.RAY_JOB_SUBMISSION_STATE_CHANGE, worker_id, address, channel
+            pubsub_pb2.RAY_JOB_SUBMISSION_STATUS_CHANNEL, worker_id, address, channel
         )
 
     @property

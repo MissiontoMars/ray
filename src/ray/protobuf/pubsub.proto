@@ -47,7 +47,7 @@ enum ChannelType {
   /// A channel for reporting node resource usage stats.
   RAY_NODE_RESOURCE_USAGE_CHANNEL = 10;
   /// A channel for reporting job submission job state change.
-  RAY_JOB_SUBMISSION_STATE_CHANGE = 11;
+  RAY_JOB_SUBMISSION_STATUS_CHANNEL = 11;
   /// A channel for publish task status event, mainly fro history server
   GCS_TASK_STATUS_EVENT_CHANNEL = 12;
 }

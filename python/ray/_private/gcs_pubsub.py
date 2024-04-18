@@ -185,7 +185,7 @@ class GcsAioPublisher(_PublisherBase):
     ) -> None:
         """Publishes error info to GCS."""
         msg = pubsub_pb2.PubMessage(
-            channel_type=pubsub_pb2.RAY_JOB_SUBMISSION_STATE_CHANGE,
+            channel_type=pubsub_pb2.RAY_JOB_SUBMISSION_STATUS_CHANNEL,
             key_id=submission_id.encode(),
             job_change_message=common_pb2.JobChangeMessage(json=message),
         )
