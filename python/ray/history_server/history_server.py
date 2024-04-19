@@ -125,47 +125,6 @@ class GcsAioJobSubmissionSubscriber(_AioSubscriber):
         # logger.info(f"GcsAioJobSubmissionSubscriber poll msgs: {msgs}")
         return msgs
 
-def add_history_server_job_fields(submission_id, job_change_message):
-    logger.info("add_history_server_job_fields")
-    log_dir = os.environ.get("BYTED_RAY_REDIRECT_LOG", "/tmp/ray/session_latest/logs")
-    node_id = job_change_message["driver_node_id"]
-    node = DataSource.nodes.get(node_id)
-    logger.info(f"node: {node}")
-    if node:
-        # Add podname/containername/logname/psm for generating logagent links.
-        node_name = node["nodeName"]
-        job_change_message["nodeName"] = node_name
-        container_name = ""
-        if "-head-" in node_name:
-            container_name = "ray-head"
-        else:
-            container_name = "ray-worker"
-
-        # logname
-        stdout_log_path = f"{log_dir}/job-driver-{submission_id}.log"
-        job_change_message["containerName"] = container_name
-        job_change_message["logName"] = stdout_log_path
-        hostip = node["nodeManagerAddress"]
-        psm = dashboard_consts.get_global_psm()
-        job_change_message["byted_log_url"] = generate_logagent_url(
-            psm, hostip, node_name, container_name, stdout_log_path
-        )
-
-        if (
-            ray_constants.RAY_ENABLE_DRIVER_ERR_LOG_FILE_ENVIRONMENT_VARIABLE
-            in os.environ
-        ):
-            stderr_log_path = f"{log_dir}/job-driver-{submission_id}.err"
-            job_change_message["errLogName"] = stderr_log_path
-            job_change_message["byted_err_log_url"] = generate_logagent_url(
-                psm, hostip, node_name, container_name, stderr_log_path
-            )
-
-    job_change_message["psm"] = dashboard_consts.get_global_psm()
-
-    return job_change_message
-
-
 # Reference to get_driver_jobs()
 # deprecated because this job is not required for jobs
 def add_driver_info_fields(reply, submission_id, job_change_message):
@@ -225,9 +184,6 @@ class HistoryServer:
                 # append_job_event(msg['key_id'], msg['job_change_message'])
                 submission_id = msg.key_id.decode("utf-8")
                 job_change_message = json.loads(msg.job_change_message.json)
-                #job_change_message = add_history_server_job_fields(
-                #    submission_id, job_change_message
-                #)
                 logger.info(
                     f"_listen_jobs type: {type(job_change_message)} job_change_message: {job_change_message}"
                 )

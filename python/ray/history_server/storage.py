@@ -16,7 +16,7 @@ from typing import List, Any
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVENT_LOG_FILENAME = "ray_event_log"
-DEFAULT_HISTORY_SERVER_EVENT_LOG = os.getenv("BYTED_RAY_HISTORY_SERVER_EVENT_LOG", None)
+DEFAULT_HISTORY_SERVER_EVENT_LOG = os.getenv("RAY_HISTORY_SERVER_EVENT_LOG", None)
 
 
 class Storage(ABC):
@@ -124,8 +124,6 @@ class HdfsStorage(Storage):
 
     def read(self, path: str):
         """
-        path: The relative path to the file. For example, hdfs://haruna/home/byte_inf_compute/user/wangwanxing/my_test_cluster_name3/ray_event_log
-              path should be "my_test_cluster_name3/ray_event_log"
         """
         with self.lock:
             if not self._is_filesystem_initialized():
@@ -215,64 +213,21 @@ class ActorHdfsStorage(Storage):
             ).remote(self.uri, self.dir)
 
 
+# S3 like storage
 class TOSStorage(Storage):
     def __init__(self, uri, key, dir, timeout=10):
         """
-        uri: TOS endpoint and bucket, for example: tos://<endpoint>/<bucket>/prefix.
-        dir: TOS path to read and write.
         """
-        fields = uri[len("tos://") :].split("/")
-        assert len(fields) >= 3
-        self.endpoint, self.bucket = fields[0], fields[1]
-        fields.append(dir)
-        self.prefix = "/".join(fields[2:])
-
-        import bytedtos
-
-        self.client = bytedtos.Client(
-            self.bucket,
-            access_key=key,
-            endpoint=self.endpoint,
-            timeout=timeout,
-            connect_timeout=timeout,
-        )
-        self.data = ""
-        self.failed_count = 0
+        pass
 
     def append(self, data: List[str], path=DEFAULT_EVENT_LOG_FILENAME):
-        if self.failed_count >= 5:
-            logger.error(
-                f"skip TOS uploading to {self.bucket}, maybe you have no permissions to write this path"
-            )
-            return
-
-        try:
-            # NOTE(wuxibin): TOS doesn't support appending to file
-            self.data += "\n".join(data) + "\n"
-            self.client.put_object(f"{self.prefix}/{path}", self.data)
-        except Exception as e:
-            self.failed_count += 1
-            logger.error(f"Exception occur when append to TOS: {e}")
+        pas
 
     def write(self, data: bytes, path: str):
-        self.client.put_object(f"{self.prefix}/{path}", data)
+        pass
 
     def read(self, path: str, decode=True):
-        try:
-            resp = self.client.get_object(f"{self.prefix}/{path}")
-            return resp.data.decode() if decode else resp.data
-        except Exception as e:
-            logger.error(f"Exception occur when read from TOS: {e}")
-            return None
-
-    def get_update_timestamp(self, file: str) -> int:
-        try:
-            info = self.client.head_object(f"{self.prefix}/{file}")
-            return info.last_modify_time
-        except Exception as e:
-            logger.error(f"Exception occur when read from TOS: {e}")
-            return 0
-
+        pass
 
 class EventLogCache:
     def __init__(self):
@@ -315,7 +270,7 @@ def create_history_server_storage(ray_cluster_name=None, gcs_address=None):
     history_server_storage = None
     history_server_event_log = DEFAULT_HISTORY_SERVER_EVENT_LOG
     if ray_cluster_name is None:
-        ray_cluster_name = os.getenv("BYTED_RAY_CLUSTER", None)
+        ray_cluster_name = os.getenv("RAY_CLUSTER_NAME", None)
     logger.info(
         f"history server event log: {history_server_event_log}, ray cluster name: {ray_cluster_name}"
     )
@@ -332,7 +287,7 @@ def create_history_server_storage(ray_cluster_name=None, gcs_address=None):
         and history_server_event_log.startswith("tos://")
         and ray_cluster_name
     ):
-        access_key = os.getenv("BYTED_RAY_TOS_ACCESS_KEY", None)
+        access_key = os.getenv("MY_TOS_ACCESS_KEY", None)
         history_server_storage = TOSStorage(
             history_server_event_log, access_key, ray_cluster_name
         )
@@ -470,27 +425,3 @@ def get_cluster_all_events(event_cache, cluster_name, event_type):
 
     return events
 
-
-GODEL_LOGAGENT_URL_BASE = os.environ.get("BYTED_RAY_LOGAGENT_LINK", None)
-GODEL_LOGAGENT_KEY = os.environ.get("BYTED_RAY_LOGAGENT_KEY", None)
-
-
-def generate_logagent_url(
-    psm: str, hostip: str, podname: str, containername: str, logname: str = None
-):
-    if GODEL_LOGAGENT_KEY is None or GODEL_LOGAGENT_URL_BASE is None:
-        return None
-
-    if hostip.startswith("[") and hostip.endswith("]"):
-        hostip = hostip[1:-1]
-    params = (
-        f"psm={psm}&hostip={hostip}&podname={podname}&containername={containername}"
-    )
-    if logname is not None:
-        params = f"{params}&logname={logname}"
-    params = f"{params}&username=xxx"
-
-    code = encrypt_aes(GODEL_LOGAGENT_KEY, params)
-    if code is None:
-        return None
-    return f"{GODEL_LOGAGENT_URL_BASE}code={code.decode('utf-8')}"

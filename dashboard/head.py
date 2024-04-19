@@ -157,7 +157,7 @@ class DashboardHead:
         # be configured to expose APIs.
         self.http_server = None
         # Only for Test
-        if os.getenv("BYTED_HISTORY_SERVER_READONLY", None):
+        if os.getenv("HISTORY_SERVER_READONLY", None):
             self.history_server_storage = LocalFileStorage(None, None)
         else:
             self.history_server_storage = create_history_server_storage()
