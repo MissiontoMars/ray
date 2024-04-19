@@ -45,6 +45,7 @@ from ray.job_submission import JobStatus
 from ray._private.event.event_logger import get_event_logger
 from ray.core.generated.event_pb2 import Event
 from ray.runtime_env import RuntimeEnvConfig
+from ray._private.gcs_pubsub import GcsAioPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +176,7 @@ class JobSupervisor:
 
         # Windows Job Object used to handle stopping the child processes.
         self._win32_job_object = None
+        self.gcs_publisher = GcsAioPublisher(address=gcs_address)
 
     def _get_driver_runtime_env(
         self, resources_specified: bool = False
@@ -402,6 +404,7 @@ class JobSupervisor:
                 "driver_agent_http_address": driver_agent_http_address,
                 "driver_node_id": driver_node_id,
             },
+            gcs_publisher=self.gcs_publisher,
         )
 
         try:
@@ -464,7 +467,7 @@ class JobSupervisor:
                         )
                         self._kill_processes(proc_to_kill, signal.SIGKILL)
 
-                await self._job_info_client.put_status(self._job_id, JobStatus.STOPPED)
+                await self._job_info_client.put_status(self._job_id, JobStatus.STOPPED, gcs_publisher=self.gcs_publisher)
             else:
                 # Child process finished execution and no stop event is set
                 # at the same time
@@ -480,6 +483,7 @@ class JobSupervisor:
                         self._job_id,
                         JobStatus.SUCCEEDED,
                         driver_exit_code=return_code,
+                        gcs_publisher=self.gcs_publisher,
                     )
                 else:
                     log_tail = self._log_client.get_last_n_log_lines(self._job_id)
@@ -500,6 +504,7 @@ class JobSupervisor:
                         JobStatus.FAILED,
                         message=message,
                         driver_exit_code=return_code,
+                        gcs_publisher=self.gcs_publisher,
                     )
         except Exception:
             logger.error(
@@ -511,6 +516,7 @@ class JobSupervisor:
                     self._job_id,
                     JobStatus.FAILED,
                     message=traceback.format_exc(),
+                    gcs_publisher=self.gcs_publisher,
                 )
             except Exception:
                 logger.error(
@@ -550,6 +556,7 @@ class JobManager:
             self.event_logger = get_event_logger(Event.SourceType.JOBS, logs_dir)
         except Exception:
             self.event_logger = None
+        self.gcs_publisher = GcsAioPublisher(address=self._gcs_address)
 
         self._recover_running_jobs_event = asyncio.Event()
         run_background_task(self._recover_running_jobs())
@@ -658,6 +665,7 @@ class JobManager:
                             job_id,
                             JobStatus.FAILED,
                             message=err_msg,
+                            gcs_publisher=self.gcs_publisher,
                         )
                         is_alive = False
                         logger.error(err_msg)
@@ -684,6 +692,7 @@ class JobManager:
                                 "Unexpected error occurred: "
                                 "failed to get job supervisor."
                             ),
+                            gcs_publisher=self.gcs_publisher,
                         )
                         is_alive = False
                         continue
@@ -714,6 +723,7 @@ class JobManager:
                         job_id,
                         job_status,
                         message=job_error_message,
+                        gcs_publisher=self.gcs_publisher,
                     )
                 elif isinstance(e, ActorUnschedulableError):
                     logger.info(
@@ -727,6 +737,7 @@ class JobManager:
                         job_id,
                         JobStatus.FAILED,
                         message=job_error_message,
+                        gcs_publisher=self.gcs_publisher,
                     )
                 else:
                     logger.warning(
@@ -738,6 +749,7 @@ class JobManager:
                         job_id,
                         job_status,
                         message=job_error_message,
+                        gcs_publisher=self.gcs_publisher,
                     )
 
                 # Log error message to the job driver file for easy access.
@@ -1009,6 +1021,7 @@ class JobManager:
                 submission_id,
                 JobStatus.FAILED,
                 message=f"Failed to start supervisor actor {submission_id}: '{e}'",
+                gcs_publisher=self.gcs_publisher,
             )
 
         return submission_id

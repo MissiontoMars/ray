@@ -194,7 +194,7 @@ class JobInfoStorageClient:
         self._gcs_aio_client = gcs_aio_client
 
     async def put_info(
-        self, job_id: str, job_info: JobInfo, overwrite: bool = True
+        self, job_id: str, job_info: JobInfo, overwrite: bool = True, gcs_publisher=None,
     ) -> bool:
         """Put job info to the internal kv store.
 
@@ -212,6 +212,11 @@ class JobInfoStorageClient:
             overwrite,
             namespace=ray_constants.KV_NAMESPACE_JOB,
         )
+        if ray_constants.RAY_HISTORY_SERVER_ENABLED and gcs_publisher:
+            print(f'publish_job_change {job_info.to_json()}')
+            await gcs_publisher.publish_job_change(
+                job_id, json.dumps(job_info.to_json())
+            )
         return added_num == 1
 
     async def get_info(self, job_id: str, timeout: int = 30) -> Optional[JobInfo]:
@@ -240,6 +245,7 @@ class JobInfoStorageClient:
         message: Optional[str] = None,
         driver_exit_code: Optional[int] = None,
         jobinfo_replace_kwargs: Optional[Dict[str, Any]] = None,
+        gcs_publisher = None,
     ):
         """Puts or updates job status.  Sets end_time if status is terminal."""
 
@@ -262,7 +268,8 @@ class JobInfoStorageClient:
         if status.is_terminal():
             new_info.end_time = int(time.time() * 1000)
 
-        await self.put_info(job_id, new_info)
+        print(f'publish_job put_status: {status}')
+        await self.put_info(job_id, new_info, gcs_publisher=gcs_publisher)
 
     async def get_status(self, job_id: str) -> Optional[JobStatus]:
         job_info = await self.get_info(job_id)

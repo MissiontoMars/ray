@@ -80,6 +80,7 @@ const ActorTable = ({
   onFilterChange,
   detailPathPrefix = "",
 }: ActorTableProps) => {
+  const historyMode = process.env.REACT_APP_RAY_HISTORY
   const [pageNo, setPageNo] = useState(1);
   const { changeFilter, filterFunc } = useFilter<string>({
     overrideFilters:

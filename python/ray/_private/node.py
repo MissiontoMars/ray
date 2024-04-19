@@ -1350,6 +1350,10 @@ class Node:
             raise_on_failure=raise_on_api_server_failure,
         )
 
+        if ray_constants.RAY_HISTORY_SERVER_ENABLED:
+            self.start_history_server(
+            )
+
     def start_ray_processes(self):
         """Start all of the processes on the node."""
         logger.debug(
@@ -1774,3 +1778,15 @@ class Node:
             # so we truncate it to the first 50 characters
             # to avoid any issues.
             record_hardware_usage(cpu_model_name[:50])
+
+    def start_history_server(self):
+        stdout_file, stderr_file = self.get_log_file_handles("history_server", unique=True)
+        process_info = ray._private.services.start_history_server(
+            self.gcs_address,
+            self._logs_dir,
+            stdout_file=stdout_file,
+            stderr_file=stderr_file,
+            fate_share=self.kernel_fate_share,
+        )
+        assert ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR not in self.all_processes
+        self.all_processes[ray_constants.PROCESS_TYPE_HISTORY_SERVER_MONITOR] = [process_info]
