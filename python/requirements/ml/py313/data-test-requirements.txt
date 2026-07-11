@@ -42,5 +42,5 @@ zarr>=2.18,<2.18.4 ; python_version < '3.11'  # 2.18.3: last v2 line supporting 
 # numcodecs is zarr's codec dep; 0.14+ dropped py3.10. Pin per-Python with exact
 # versions so the markers survive pip-compile -- the compiled-constraint pin must
 # stay gated to py3.11+, otherwise the py3.10 data locks can't resolve zarr.
-numcodecs==0.15.1 ; python_version >= '3.11'
+numcodecs==0.16.5 ; python_version >= '3.11'
 numcodecs==0.13.1 ; python_version < '3.11'
