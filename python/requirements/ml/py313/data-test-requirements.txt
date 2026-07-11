@@ -35,7 +35,7 @@ jaxlib
 tensorflow-datasets
 tensorflow-metadata>=1.17.0
 tf-keras
-torchvision==0.24.0
+torchvision==0.28.0+cpu
 confluent-kafka
 zarr<3 ; python_version >= '3.11'  # zarr 2.18.4+ requires py3.11+ (v2 API)
 zarr>=2.18,<2.18.4 ; python_version < '3.11'  # 2.18.3: last v2 line supporting py3.10

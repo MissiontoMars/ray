@@ -18,7 +18,7 @@ tf-keras==2.20.0
 torch==2.9.0
 torchmetrics==0.10.3
 torchtext==0.18.0
-torchvision==0.24.0
+torchvision==0.28.0+cpu
 # xgboost pulls nvidia-nccl-cu12 transitively even in CPU context. Align the
 # pin with what cu128 torch requires so the compiled lock doesn't clash with
 # GPU depsets that consume it as a constraint.

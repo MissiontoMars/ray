@@ -9,7 +9,7 @@ tf-keras==2.20.0
 --find-links https://data.pyg.org/whl/torch-2.9.0+cu128.html  # for GPU versions of torch-scatter, torch-sparse, torch-cluster, torch-spline-conv
 # specifying explicit plus-notation below so pip overwrites the existing cpu verisons
 torch==2.9.0+cu128
-torchvision==0.24.0+cu128
+torchvision==0.28.0+cpu
 torch-scatter==2.1.2+pt29cu128
 torch-sparse==0.6.18+pt29cu128
 torch-cluster==1.6.3+pt29cu128
