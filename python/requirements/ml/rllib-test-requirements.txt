@@ -24,7 +24,7 @@ tensorflow_estimator
 open-spiel==1.4
 
 # Requires libtorrent which is unavailable for arm64
-h5py==3.12.1
+h5py==3.16.0
 
 # Requirements for rendering.
 moviepy
